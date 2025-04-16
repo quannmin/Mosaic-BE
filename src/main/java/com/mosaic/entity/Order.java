@@ -23,6 +23,9 @@ public class Order {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;
+    BigDecimal totalOriginalItemsPrice;
+    BigDecimal totalAppliedItemsPrice;
+    BigDecimal shippingPrice;
     BigDecimal totalPrice;
     String referenceCode;
     @Enumerated(EnumType.STRING)

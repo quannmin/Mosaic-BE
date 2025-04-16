@@ -1,5 +1,6 @@
 package com.mosaic.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -19,5 +20,6 @@ public class Image {
     String urlDownload;
     Integer display_order;
     @ManyToOne(fetch = FetchType.LAZY)
+    @JsonIgnore
     ProductVariant productVariant;
 }

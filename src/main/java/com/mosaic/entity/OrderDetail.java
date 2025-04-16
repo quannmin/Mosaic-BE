@@ -18,7 +18,8 @@ public class OrderDetail {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;
     Integer quantity;
-    BigDecimal unit_price;
+    BigDecimal originalUnitPrice;
+    BigDecimal appliedUnitPrice;
     @ManyToOne
     Order order;
     @ManyToOne

@@ -1,3 +1,12 @@
+aws:
+  credentials:
+    access-key: ${AWS_ACCESS_KEY}
+    secret-key: ${AWS_SECRET_KEY}
+  region: ${AWS_REGION}
+  s3:
+    bucket: ${AWS_S3_BUCKET}
+    product-image-folder: ${AWS_S3_PRODUCT_FOLDER}
+    product-variant-image-folder: ${AWS_S3_VARIANT_FOLDER}
 spring:
   application:
     name: EXE-Mosaic-BE
@@ -11,6 +20,11 @@ spring:
       ddl-auto: update
     database: postgresql
     database-platform: org.hibernate.dialect.PostgreSQLDialect
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
 server:
   port: 8080
 
@@ -28,6 +42,5 @@ management:
       exposure:
         include: health, info, metrics
 
-
 api:
-  prefix:/api/v1
+  prefix: /api/v1

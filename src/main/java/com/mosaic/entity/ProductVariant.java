@@ -22,10 +22,7 @@ public class ProductVariant {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Integer id;
-    String name;
-    BigDecimal price;
     String color;
-    String sizeDescription;
     Integer stockQuantity;
     @CreatedDate
     Instant createdAt;
@@ -35,7 +32,7 @@ public class ProductVariant {
     String updatedBy;
     @ManyToOne(fetch = FetchType.LAZY)
     Product product;
-    @OneToMany(mappedBy = "productVariant")
+    @OneToMany(mappedBy = "productVariant", cascade = CascadeType.ALL)
     List<Image> images;
     @OneToMany(mappedBy = "productVariant")
     List<OrderDetail> orderDetails;
