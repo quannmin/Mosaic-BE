@@ -73,4 +73,4 @@ See `application.yml` for all configuration options.
 ## 📧 Contact
 
 - Email: louisquinn296@gmail.com
-- GitHub: [My GitHub Profile](https://github.com/quannmin)
+- GitHub: https://github.com/quannmin
