@@ -20,5 +20,6 @@ public class ProductVariantResponse {
     Instant updatedAt;
     String createdBy;
     String updatedBy;
+    String mainUrlImage;
     List<Image> images;
 }

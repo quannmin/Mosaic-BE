@@ -19,6 +19,7 @@ public class Image {
     Long id;
     String urlDownload;
     Integer display_order;
+    boolean isMainUrlImage;
     @ManyToOne(fetch = FetchType.LAZY)
     @JsonIgnore
     ProductVariant productVariant;

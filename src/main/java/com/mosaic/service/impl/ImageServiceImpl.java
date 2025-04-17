@@ -39,6 +39,11 @@ public class ImageServiceImpl implements ImageService {
     }
 
     @Override
+    public Image findByMainUrlImageTrue() {
+        return imageRepository.findByMainUrlImageTrue()
+                .orElseThrow(() -> new ElementNotFoundException("Main image not found"));    }
+
+    @Override
     public List<Image> findAllImages() {
         return imageRepository.findAll();
     }

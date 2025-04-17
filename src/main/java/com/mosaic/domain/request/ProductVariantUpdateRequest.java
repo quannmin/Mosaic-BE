@@ -11,4 +11,6 @@ import lombok.experimental.FieldDefaults;
 public class ProductVariantUpdateRequest {
     String color;
     Integer stockQuantity;
+    Long imageId;
+    boolean isMainUrlImage;
 }

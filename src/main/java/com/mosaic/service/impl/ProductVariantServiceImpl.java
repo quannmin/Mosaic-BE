@@ -7,6 +7,7 @@ import com.mosaic.entity.Image;
 import com.mosaic.entity.ProductVariant;
 import com.mosaic.exception.ElementNotFoundException;
 import com.mosaic.mapper.ProductVariantMapper;
+import com.mosaic.repository.ImageRepository;
 import com.mosaic.repository.ProductVariantRepository;
 import com.mosaic.service.spec.ImageService;
 import com.mosaic.service.spec.ProductVariantService;
@@ -28,6 +29,7 @@ public class ProductVariantServiceImpl implements ProductVariantService {
     private final S3Service s3Service;
     private final ProductVariantMapper productVariantMapper;
     private final ImageService imageService;
+    private final ImageRepository imageRepository;
 
     @Override
     @Transactional
@@ -35,11 +37,6 @@ public class ProductVariantServiceImpl implements ProductVariantService {
         ProductVariant productVariant = productVariantMapper.toProductVariantCreate(productVariantCreateRequest);
         productVariant.setCreatedBy("");
         productVariantRepository.save(productVariant);
-
-        return getProductVariantResponse(image, productVariant);
-    }
-
-    private ProductVariantResponse getProductVariantResponse(MultipartFile[] image, ProductVariant productVariant) {
         List<Image> savedImages = new ArrayList<>();
 
         if(image != null && image.length > 0) {
@@ -63,6 +60,7 @@ public class ProductVariantServiceImpl implements ProductVariantService {
     @Transactional
     public ProductVariantResponse updateProductVariant(Long productVariantId,
                                                        ProductVariantUpdateRequest productVariantUpdateRequest,
+                                                       MultipartFile newImage,
                                                        MultipartFile[] newImages) {
         ProductVariant existingProductVariant = productVariantRepository.findById(productVariantId)
                 .orElseThrow(() -> new ElementNotFoundException("Product variant not found"));
@@ -70,6 +68,24 @@ public class ProductVariantServiceImpl implements ProductVariantService {
         productVariantMapper.toProductVariantUpdate(productVariantUpdateRequest, existingProductVariant);
         existingProductVariant.setUpdatedBy("");
         productVariantRepository.save(existingProductVariant);
+
+        if(productVariantUpdateRequest.getImageId() != null) {
+            Image oldImage = imageService.findImageById(productVariantUpdateRequest.getImageId());
+            if(newImage != null) {
+                String urlImage = s3Service.uploadProductVariantImage(newImage);
+                s3Service.deleteImage(oldImage.getUrlDownload());
+                if(urlImage != null) {
+                    oldImage.setUrlDownload(urlImage);
+                    oldImage.setMainUrlImage(productVariantUpdateRequest.isMainUrlImage());
+                }
+            } else if(productVariantUpdateRequest.isMainUrlImage()) {
+                Image currentImage = imageService.findByMainUrlImageTrue();
+                currentImage.setMainUrlImage(false);
+                imageRepository.save(currentImage);
+                oldImage.setMainUrlImage(true);
+            }
+            imageRepository.save(oldImage);
+        }
 
         if(newImages != null && newImages.length > 0) {
             Arrays.stream(newImages).forEach(item -> {
@@ -86,9 +102,12 @@ public class ProductVariantServiceImpl implements ProductVariantService {
         }
 
         List<Image> allImages = imageService.findAllByProductVariantId(productVariantId);
-
+        Image mainImage = allImages.stream().filter(Image::isMainUrlImage).findFirst().orElse(null);
         ProductVariantResponse productVariantResponse = productVariantMapper.toProductVariantResponse(existingProductVariant);
         productVariantResponse.setImages(allImages);
+        if(mainImage != null) {
+            productVariantResponse.setMainUrlImage(mainImage.getUrlDownload());
+        }
         return productVariantResponse;
     }
 

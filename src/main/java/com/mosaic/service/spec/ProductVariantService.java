@@ -11,7 +11,8 @@ import java.util.List;
 
 public interface ProductVariantService {
     ProductVariantResponse createProductVariant(ProductVariantCreateRequest productVariantCreateRequest, MultipartFile[] image);
-    ProductVariantResponse updateProductVariant(Long productVariantId, ProductVariantUpdateRequest productVariantUpdateRequest, MultipartFile[] image);
+    ProductVariantResponse updateProductVariant(Long productVariantId, ProductVariantUpdateRequest productVariantUpdateRequest,
+                                                MultipartFile image, MultipartFile[] images);
     ProductVariantResponse findProductVariantById(Long id);
     void deleteProductVariant(Long id);
     List<ProductVariantResponse> findAllProductVariants();

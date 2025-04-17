@@ -39,12 +39,13 @@ public class ProductVariantController {
     public ResponseEntity<ApiResponse<ProductVariantResponse>> updateProductVariant(
             @PathVariable Long id,
             @RequestPart("product-variant") @Valid ProductVariantUpdateRequest productVariantUpdateRequest,
-            @RequestPart(value = "images", required = false) MultipartFile[] images) {
+            @RequestPart(value = "images", required = false) MultipartFile[] images,
+            @RequestPart(value = "image", required = false)MultipartFile image) {
 
         return  ResponseEntity.ok(ApiResponse.<ProductVariantResponse>builder()
                 .code(HttpStatus.OK.value())
                 .message("Update product variant successfully!")
-                .data(productVariantService.updateProductVariant(id, productVariantUpdateRequest, images))
+                .data(productVariantService.updateProductVariant(id, productVariantUpdateRequest, image, images))
                 .success(true)
                 .build());
     }
