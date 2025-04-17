@@ -10,7 +10,5 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class ProductVariantUpdateRequest {
     String color;
-    String sizeDescription;
     Integer stockQuantity;
-    String updatedBy;
 }

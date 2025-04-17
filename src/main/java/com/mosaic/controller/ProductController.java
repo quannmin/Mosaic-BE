@@ -60,13 +60,23 @@ public class ProductController {
     public ResponseEntity<ApiResponse<ProductResponse>> updateProduct (
             @PathVariable Long id,
             @RequestPart("product") @Valid ProductUpdateRequest productUpdateRequest,
-            @RequestPart("image") MultipartFile image) {
+            @RequestPart(value = "image", required = false) MultipartFile image) {
         ProductResponse productResponse = productService.updateProduct(id, productUpdateRequest, image);
         return ResponseEntity.ok(ApiResponse.<ProductResponse>builder()
                 .data(productResponse)
                 .success(true)
                 .code(HttpStatus.OK.value())
                 .message("Update product successfully!")
+                .build());
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse<Void>> deleteProduct(@PathVariable Long id) {
+        productService.deleteProduct(id);
+        return ResponseEntity.ok(ApiResponse.<Void>builder()
+                .success(true)
+                .code(HttpStatus.OK.value())
+                .message("Delete product successfully!")
                 .build());
     }
 }

@@ -22,7 +22,7 @@ import java.time.Instant;
 public class Payment {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    Integer id;
+    Long id;
     String referenceCode;
     PaymentStatusEnum status;
     PaymentMethodEnum paymentMethod;

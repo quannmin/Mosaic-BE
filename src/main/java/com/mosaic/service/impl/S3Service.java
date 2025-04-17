@@ -7,8 +7,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
-
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -77,5 +77,36 @@ public class S3Service {
             return "";
         }
         return filename.substring(lastDotIndex + 1);
+    }
+
+    public void deleteImage(String imageUrl) {
+        try {
+            String s3key = extractS3KeyFromUrl(imageUrl);
+            if(s3key == null) {
+                log.error("Invalid S3 URL format: {}", imageUrl);
+                return;
+            }
+            DeleteObjectRequest deleteObjectRequest = DeleteObjectRequest.builder().bucket(bucketName).key(s3key).build();
+            s3Client.deleteObject(deleteObjectRequest);
+            log.info("Successfully deleted image from S3 {}", s3key);
+        } catch (Exception e) {
+            log.error("Error deleting S3 URL: {}", imageUrl, e);
+            throw new RuntimeException("Failed to delete image from S3", e);
+        }
+    }
+
+    private String extractS3KeyFromUrl(String imageUrl) {
+        try {
+            String expectedPrefix = String.format("https://%s.s3.%s.amazonaws.com/", bucketName, region);
+            if(!imageUrl.startsWith(expectedPrefix)) {
+                log.warn("URL does not match expected S3 bucket: {}", imageUrl);
+                return null;
+            }
+
+            return imageUrl.substring(expectedPrefix.length());
+        } catch (Exception e) {
+            log.error("Error parsing S3 URL: {}", imageUrl, e);
+            return null;
+        }
     }
 }

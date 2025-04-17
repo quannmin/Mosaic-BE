@@ -21,7 +21,7 @@ import java.util.List;
 public class ProductVariant {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    Integer id;
+    Long id;
     String color;
     Integer stockQuantity;
     @CreatedDate

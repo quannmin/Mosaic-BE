@@ -11,5 +11,5 @@ public interface ProductService {
     ProductResponse createProduct(ProductCreateRequest productCreateRequest, MultipartFile image);
     ProductResponse updateProduct(Long productId, ProductUpdateRequest productUpdateRequest, MultipartFile image);
     List<ProductResponse> getAllProducts();
-    boolean deleteProduct(Long productId);
+    void deleteProduct(Long productId);
 }

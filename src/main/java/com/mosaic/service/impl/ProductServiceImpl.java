@@ -52,13 +52,14 @@ public class ProductServiceImpl implements ProductService {
 
         if (image != null && !image.isEmpty()) {
             String imageUrl = s3Service.uploadProductImage(image);
+            s3Service.deleteImage(existingProduct.getMainImageUrl());
             existingProduct.setMainImageUrl(imageUrl);
         }
 
-        Product product = productMapper.toProductUpdate(productUpdateRequest);
-        product.setUpdatedBy("");
+        productMapper.toProductUpdate(productUpdateRequest, existingProduct);
+        existingProduct.setUpdatedBy("");
 
-        return productMapper.toProductResponse(productRepository.save(product));
+        return productMapper.toProductResponse(productRepository.save(existingProduct));
     }
 
     @Override
@@ -67,7 +68,11 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public boolean deleteProduct(Long productId) {
-        return false;
+    @Transactional
+    public void deleteProduct(Long productId) {
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new ElementNotFoundException("Product not found"));
+        s3Service.deleteImage(product.getMainImageUrl());
+        productRepository.delete(product);
     }
 }
