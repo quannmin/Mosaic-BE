@@ -31,3 +31,16 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# Environment variables
+.env
+*.env
+application-local.properties
+application-local.yml
+
+# Docker
+.docker/
+docker-compose.override.yml
+
+# AWS credentials
+aws.credentials

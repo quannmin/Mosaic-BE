@@ -28,12 +28,32 @@ public class GlobalExceptionHandler {
                         .build());
     }
 
+    @ExceptionHandler(DuplicateElementException.class)
+    ResponseEntity<ApiResponse<Object>> handleDuplicateElementException(DuplicateElementException e) {
+        return ResponseEntity.status(HttpStatus.CONFLICT.value())
+                .body(ApiResponse.builder()
+                        .message(e.getMessage())
+                        .code(HttpStatus.CONFLICT.value())
+                        .success(false)
+                        .build());
+    }
+
     @ExceptionHandler(AuthenticationException.class)
     ResponseEntity<ApiResponse<Object>> handleAuthenticationException(AuthenticationException e) {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR.value())
                 .body(ApiResponse.builder()
                         .message(e.getMessage())
                         .code(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                        .success(false)
+                        .build());
+    }
+
+    @ExceptionHandler(InsufficientStockException.class)
+    ResponseEntity<ApiResponse<Object>> handleInsufficientStockException(InsufficientStockException e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST.value())
+                .body(ApiResponse.builder()
+                        .message(e.getMessage())
+                        .code(HttpStatus.BAD_REQUEST.value())
                         .success(false)
                         .build());
     }

@@ -25,7 +25,8 @@ public class Order {
     Long id;
     BigDecimal totalOriginalItemsPrice;
     BigDecimal totalAppliedItemsPrice;
-    BigDecimal shippingPrice;
+    Integer totalItemsDiscount;
+    Double shippingPrice;
     BigDecimal totalPrice;
     String referenceCode;
     @Enumerated(EnumType.STRING)

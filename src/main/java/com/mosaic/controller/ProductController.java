@@ -16,7 +16,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 
 @RestController
-@RequestMapping("${api.prefix}/product")
+@RequestMapping("${api.prefix}/products")
 @RequiredArgsConstructor
 public class ProductController {
     private final ProductService productService;
@@ -26,7 +26,7 @@ public class ProductController {
         return ResponseEntity.ok(ApiResponse.<ProductResponse>builder()
                 .success(true)
                 .message("Get product successfully!")
-                .data(productService.getProductById(id))
+                .data(productService.findProductResponseById(id))
                 .code(HttpStatus.OK.value())
                 .build());
     }
@@ -36,7 +36,7 @@ public class ProductController {
         return ResponseEntity.ok(ApiResponse.<List<ProductResponse>>builder()
                 .success(true)
                 .message("Get product successfully!")
-                .data(productService.getAllProducts())
+                .data(productService.findAllProducts())
                 .code(HttpStatus.OK.value())
                 .build());
     }

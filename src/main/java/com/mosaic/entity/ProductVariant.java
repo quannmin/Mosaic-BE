@@ -30,6 +30,7 @@ public class ProductVariant {
     Instant updatedAt;
     String createdBy;
     String updatedBy;
+    String mainUrlImage;
     @ManyToOne(fetch = FetchType.LAZY)
     Product product;
     @OneToMany(mappedBy = "productVariant", cascade = CascadeType.ALL)

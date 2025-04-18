@@ -1,6 +1,9 @@
 package com.mosaic.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
@@ -10,25 +13,29 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.Instant;
-import java.util.List;
 
-@Entity(name = "wards")
+@Entity
 @EntityListeners(AuditingEntityListener.class)
 @Getter
 @Setter
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class Ward {
+public class QuantityDiscount {
     @Id
-    String code;
-    String name;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    Long id;
+    @NotNull
+    @Min(2)
+    Integer minQuantity;
+    @NotNull
+    @Min(1)
+    @Max(100)
+    Integer discountPercentage;
     @CreatedDate
     Instant createdAt;
     @LastModifiedDate
     Instant updatedAt;
     String createdBy;
     String updatedBy;
-    @OneToMany(mappedBy = "ward")
-    List<Address> addresses;
     @ManyToOne(fetch = FetchType.LAZY)
-    District district;
+    ProductVariant productVariant;
 }

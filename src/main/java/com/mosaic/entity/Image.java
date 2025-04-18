@@ -18,8 +18,8 @@ public class Image {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;
     String urlDownload;
-    Integer display_order;
-    boolean isMainUrlImage;
+    Integer displayOrder;
+    boolean mainUrlImage = false;
     @ManyToOne(fetch = FetchType.LAZY)
     @JsonIgnore
     ProductVariant productVariant;

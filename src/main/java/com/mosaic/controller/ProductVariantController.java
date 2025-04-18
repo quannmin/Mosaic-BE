@@ -15,7 +15,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 
 @RestController
-@RequestMapping("${api.prefix}/product-variant")
+@RequestMapping("${api.prefix}/product-variants")
 @RequiredArgsConstructor
 public class ProductVariantController {
 
@@ -57,7 +57,7 @@ public class ProductVariantController {
                         .code(HttpStatus.OK.value())
                         .message("Get product variant successfully!")
                         .success(true)
-                        .data(productVariantService.findProductVariantById(id))
+                        .data(productVariantService.findProductVariantResponseById(id))
                         .build());
     }
 

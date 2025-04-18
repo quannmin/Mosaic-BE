@@ -23,10 +23,15 @@ public class ProductServiceImpl implements ProductService {
     private final S3Service s3Service;
 
     @Override
-    public ProductResponse getProductById(Long productId) {
-        Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new ElementNotFoundException("Product not found"));
+    public ProductResponse findProductResponseById(Long productId) {
+        Product product = findProductById(productId);
         return productMapper.toProductResponse(product);
+    }
+
+    @Override
+    public Product findProductById(Long productId) {
+        return productRepository.findById(productId)
+                .orElseThrow(() -> new ElementNotFoundException("Product not found"));
     }
 
     @Override
@@ -47,9 +52,7 @@ public class ProductServiceImpl implements ProductService {
     @Transactional
     public ProductResponse updateProduct(Long productId, ProductUpdateRequest productUpdateRequest, MultipartFile image) {
 
-        Product existingProduct = productRepository.findById(productId)
-                .orElseThrow(() -> new ElementNotFoundException("Product not found"));
-
+        Product existingProduct = findProductById(productId);
         if (image != null && !image.isEmpty()) {
             String imageUrl = s3Service.uploadProductImage(image);
             s3Service.deleteImage(existingProduct.getMainImageUrl());
@@ -63,15 +66,14 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public List<ProductResponse> getAllProducts() {
+    public List<ProductResponse> findAllProducts() {
         return productRepository.findAll().stream().map(productMapper::toProductResponse).toList();
     }
 
     @Override
     @Transactional
     public void deleteProduct(Long productId) {
-        Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new ElementNotFoundException("Product not found"));
+        Product product = findProductById(productId);
         s3Service.deleteImage(product.getMainImageUrl());
         productRepository.delete(product);
     }

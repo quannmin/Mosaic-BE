@@ -20,6 +20,13 @@ spring:
       ddl-auto: update
     database: postgresql
     database-platform: org.hibernate.dialect.PostgreSQLDialect
+  data:
+    jdbc:
+      dialect: postgresql
+    redis:
+      port: ${REDIS_PORT}
+      host: ${REDIS_HOST}
+      timeout: 2000
   servlet:
     multipart:
       max-file-size: 10MB

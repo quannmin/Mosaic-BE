@@ -62,12 +62,10 @@ public class ProductVariantServiceImpl implements ProductVariantService {
                                                        ProductVariantUpdateRequest productVariantUpdateRequest,
                                                        MultipartFile newImage,
                                                        MultipartFile[] newImages) {
-        ProductVariant existingProductVariant = productVariantRepository.findById(productVariantId)
-                .orElseThrow(() -> new ElementNotFoundException("Product variant not found"));
+        ProductVariant existingProductVariant = findProductVariantById(productVariantId);
 
         productVariantMapper.toProductVariantUpdate(productVariantUpdateRequest, existingProductVariant);
         existingProductVariant.setUpdatedBy("");
-        productVariantRepository.save(existingProductVariant);
 
         if(productVariantUpdateRequest.getImageId() != null) {
             Image oldImage = imageService.findImageById(productVariantUpdateRequest.getImageId());
@@ -102,17 +100,24 @@ public class ProductVariantServiceImpl implements ProductVariantService {
         }
 
         List<Image> allImages = imageService.findAllByProductVariantId(productVariantId);
-        Image mainImage = allImages.stream().filter(Image::isMainUrlImage).findFirst().orElse(null);
+        Image mainImage = allImages.stream().filter(Image::isMainUrlImage).findFirst().orElseThrow(
+                () -> new ElementNotFoundException("Main image not found!"));
+        if(mainImage != null) {
+            existingProductVariant.setMainUrlImage(mainImage.getUrlDownload());
+        }
+        productVariantRepository.save(existingProductVariant);
         ProductVariantResponse productVariantResponse = productVariantMapper.toProductVariantResponse(existingProductVariant);
         productVariantResponse.setImages(allImages);
-        if(mainImage != null) {
-            productVariantResponse.setMainUrlImage(mainImage.getUrlDownload());
-        }
         return productVariantResponse;
     }
 
     @Override
-    public ProductVariantResponse findProductVariantById(Long id) {
+    public ProductVariant findProductVariantById(Long id) {
+        return productVariantRepository.findById(id).orElseThrow(() -> new ElementNotFoundException("Product variant not found!"));
+    }
+
+    @Override
+    public ProductVariantResponse findProductVariantResponseById(Long id) {
         ProductVariant productVariant = productVariantRepository.findById(id).orElseThrow(() -> new ElementNotFoundException("Product variant not found!"));
         return productVariantMapper.toProductVariantResponse(productVariant);
     }
@@ -120,7 +125,7 @@ public class ProductVariantServiceImpl implements ProductVariantService {
     @Override
     @Transactional
     public void deleteProductVariant(Long id) {
-        ProductVariant productVariant = productVariantRepository.findById(id).orElseThrow(() -> new ElementNotFoundException("Product variant not found!"));
+        ProductVariant productVariant = findProductVariantById(id);
         productVariant.getImages().forEach(item -> s3Service.deleteImage(item.getUrlDownload()));
         productVariantRepository.delete(productVariant);
     }
