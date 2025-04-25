@@ -11,5 +11,5 @@ import org.mapstruct.MappingTarget;
 public interface ProductMapper {
     ProductResponse toProductResponse(Product product);
     Product toProductCreate(ProductCreateRequest productCreateRequest);
-    Product toProductUpdate(ProductUpdateRequest productUpdateRequest, @MappingTarget Product existingProduct);
+    void toProductUpdate(ProductUpdateRequest productUpdateRequest, @MappingTarget Product existingProduct);
 }

@@ -2,9 +2,7 @@ package com.mosaic.entity;
 
 import com.mosaic.util.constant.OrderStatusEnum;
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 import lombok.experimental.FieldDefaults;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
@@ -15,10 +13,13 @@ import java.time.Instant;
 import java.util.List;
 
 @Entity(name = "orders")
+@Builder
 @EntityListeners(AuditingEntityListener.class)
 @Getter
 @Setter
 @FieldDefaults(level = AccessLevel.PRIVATE)
+@NoArgsConstructor
+@AllArgsConstructor
 public class Order {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -37,10 +38,15 @@ public class Order {
     Instant updatedAt;
     String createdBy;
     String updatedBy;
+    Boolean isDeleted;
+    @Column(unique = true)
+    private String orderNumber;
     @ManyToOne(fetch = FetchType.LAZY)
     User user;
     @ManyToOne(fetch = FetchType.LAZY)
     Address address;
     @OneToMany(mappedBy = "order")
     List<OrderDetail> details;
+    @OneToOne(mappedBy = "order", cascade = CascadeType.ALL)
+    Payment payment;
 }

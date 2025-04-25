@@ -21,6 +21,7 @@ public class Ward {
     @Id
     String code;
     String name;
+    String divisionType;
     @CreatedDate
     Instant createdAt;
     @LastModifiedDate

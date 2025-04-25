@@ -24,8 +24,11 @@ public class Payment {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;
     String referenceCode;
+    @Enumerated(EnumType.STRING)
     PaymentStatusEnum status;
+    @Enumerated(EnumType.STRING)
     PaymentMethodEnum paymentMethod;
+    Boolean isDeleted;
     BigDecimal amount;
     @CreatedDate
     Instant createdAt;
@@ -35,4 +38,6 @@ public class Payment {
     String updatedBy;
     @ManyToOne(fetch = FetchType.LAZY)
     User user;
+    @OneToOne
+    Order order;
 }

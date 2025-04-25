@@ -31,6 +31,6 @@ public class Address {
     District district;
     @ManyToOne(fetch = FetchType.LAZY)
     Ward ward;
-    @OneToMany(mappedBy = "address")
+    @OneToMany(mappedBy = "address", cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REFRESH})
     List<Order> orders;
 }

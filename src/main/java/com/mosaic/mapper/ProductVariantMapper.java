@@ -11,5 +11,5 @@ import org.mapstruct.MappingTarget;
 public interface ProductVariantMapper {
     ProductVariantResponse toProductVariantResponse(ProductVariant productVariant);
     ProductVariant toProductVariantCreate(ProductVariantCreateRequest productVariantCreateRequest);
-    ProductVariant toProductVariantUpdate(ProductVariantUpdateRequest productVariantUpdateRequest, @MappingTarget ProductVariant existingProductVariant);
+    void toProductVariantUpdate(ProductVariantUpdateRequest productVariantUpdateRequest, @MappingTarget ProductVariant existingProductVariant);
 }

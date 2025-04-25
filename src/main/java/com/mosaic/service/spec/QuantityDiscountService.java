@@ -6,9 +6,9 @@ import com.mosaic.domain.response.QuantityDiscountResponse;
 import java.util.List;
 
 public interface QuantityDiscountService {
-    public QuantityDiscountResponse findQuantityDiscountById(Long id);
-    public List<QuantityDiscountResponse> findQuantityDiscountByProductVariantId(Long productVariantId);
-    public QuantityDiscountResponse createQuantityDiscount(QuantityDiscountRequest request);
-    public QuantityDiscountResponse updateQuantityDiscount(Long id, QuantityDiscountRequest request);
-    public void deleteQuantityDiscount(Long id);
+     QuantityDiscountResponse findQuantityDiscountById(Long id);
+     List<QuantityDiscountResponse> findQuantityDiscountByProductVariantId(Long productVariantId);
+     QuantityDiscountResponse createQuantityDiscount(QuantityDiscountRequest request);
+     QuantityDiscountResponse updateQuantityDiscount(Long id, QuantityDiscountRequest request);
+     void deleteQuantityDiscount(Long id);
 }
