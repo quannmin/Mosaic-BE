@@ -4,7 +4,7 @@ import com.mosaic.domain.request.ProductCreateRequest;
 import com.mosaic.domain.request.ProductUpdateRequest;
 import com.mosaic.domain.response.ProductResponse;
 import com.mosaic.entity.Product;
-import com.mosaic.exception.ElementNotFoundException;
+import com.mosaic.exception.custom.ResourceNotFoundException;
 import com.mosaic.mapper.ProductMapper;
 import com.mosaic.repository.ProductRepository;
 import com.mosaic.service.spec.ProductService;
@@ -31,7 +31,7 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public Product findProductById(Long productId) {
         return productRepository.findById(productId)
-                .orElseThrow(() -> new ElementNotFoundException("Product not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Product", "id", productId));
     }
 
     @Override

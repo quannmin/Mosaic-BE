@@ -23,6 +23,7 @@ public class Address {
     String specificAddress;
     String addressType;
     boolean isDefault;
+    boolean isVerifiedPhone;
     @ManyToOne(fetch = FetchType.LAZY)
     User user;
     @ManyToOne(fetch = FetchType.LAZY)

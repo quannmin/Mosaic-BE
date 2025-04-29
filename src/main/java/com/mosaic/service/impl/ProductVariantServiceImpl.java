@@ -5,7 +5,7 @@ import com.mosaic.domain.request.ProductVariantUpdateRequest;
 import com.mosaic.domain.response.ProductVariantResponse;
 import com.mosaic.entity.Image;
 import com.mosaic.entity.ProductVariant;
-import com.mosaic.exception.ElementNotFoundException;
+import com.mosaic.exception.custom.ResourceNotFoundException;
 import com.mosaic.mapper.ProductVariantMapper;
 import com.mosaic.repository.ImageRepository;
 import com.mosaic.repository.ProductVariantRepository;
@@ -101,7 +101,7 @@ public class ProductVariantServiceImpl implements ProductVariantService {
 
         List<Image> allImages = imageService.findAllByProductVariantId(productVariantId);
         Image mainImage = allImages.stream().filter(Image::isMainUrlImage).findFirst().orElseThrow(
-                () -> new ElementNotFoundException("Main image not found!"));
+                () -> new ResourceNotFoundException("Main image in product variant not found!"));
         if(mainImage != null) {
             existingProductVariant.setMainUrlImage(mainImage.getUrlDownload());
         }
@@ -113,12 +113,20 @@ public class ProductVariantServiceImpl implements ProductVariantService {
 
     @Override
     public ProductVariant findProductVariantById(Long id) {
-        return productVariantRepository.findById(id).orElseThrow(() -> new ElementNotFoundException("Product variant not found!"));
+        return productVariantRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException(
+                "Product variant!",
+                "id",
+                id.toString())
+        );
     }
 
     @Override
     public ProductVariantResponse findProductVariantResponseById(Long id) {
-        ProductVariant productVariant = productVariantRepository.findById(id).orElseThrow(() -> new ElementNotFoundException("Product variant not found!"));
+        ProductVariant productVariant = productVariantRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException(
+                "Product variant!",
+                "id",
+                id.toString())
+        );
         return productVariantMapper.toProductVariantResponse(productVariant);
     }
 

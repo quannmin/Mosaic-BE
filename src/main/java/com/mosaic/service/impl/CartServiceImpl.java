@@ -6,11 +6,11 @@ import com.mosaic.domain.cart.CartItem;
 import com.mosaic.entity.Image;
 import com.mosaic.entity.ProductVariant;
 import com.mosaic.entity.QuantityDiscount;
-import com.mosaic.exception.ElementNotFoundException;
-import com.mosaic.exception.InsufficientStockException;
-import com.mosaic.repository.ProductVariantRepository;
+import com.mosaic.exception.custom.InsufficientStockException;
+import com.mosaic.exception.custom.ResourceNotFoundException;
 import com.mosaic.repository.QuantityDiscountRepository;
 import com.mosaic.service.spec.CartService;
+import com.mosaic.service.spec.ProductVariantService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
@@ -26,7 +26,7 @@ public class CartServiceImpl implements CartService {
     private final RedisTemplate<String, Object> redisTemplate;
     private final ObjectMapper objectMapper;
     private static final String CART_PREFIX ="cart:";
-    private final ProductVariantRepository productVariantRepository;
+    private final ProductVariantService productVariantService;
     private final QuantityDiscountRepository quantityDiscountRepository;
 
     @Override
@@ -44,8 +44,7 @@ public class CartServiceImpl implements CartService {
         if(quantity < 0) {
             throw new IllegalArgumentException("Quantity must be greater than zero");
         }
-        ProductVariant productVariant = productVariantRepository.findById(productVariantId).orElseThrow(
-                () -> new ElementNotFoundException("!Product variant not found!"));
+        ProductVariant productVariant = productVariantService.findProductVariantById(productVariantId);
 
         if (productVariant.getStockQuantity() < quantity) {
             throw new InsufficientStockException("Not enough items in stock");
@@ -116,7 +115,7 @@ public class CartServiceImpl implements CartService {
                 .anyMatch(item -> item.getProductVariantId().equals(productVariantId));
 
         if (!productExists) {
-            throw new ElementNotFoundException("Product not found in cart");
+            throw new ResourceNotFoundException("Product variant in cart", "id", productVariantId);
         }
 
         cart.getItems().removeIf(item -> item.getProductVariantId().equals(productVariantId));
@@ -133,8 +132,7 @@ public class CartServiceImpl implements CartService {
         BigDecimal totalAppliedPrice = BigDecimal.ZERO;
 
         for (CartItem cartItem : cart.getItems()) {
-            ProductVariant productVariant = productVariantRepository.findById(cartItem.getProductVariantId())
-                    .orElseThrow(() -> new ElementNotFoundException("Product variant not found"));
+            ProductVariant productVariant = productVariantService.findProductVariantById(cartItem.getProductVariantId());
 
                 BigDecimal itemOriginalPrice = cartItem.getOriginalPrice().multiply(BigDecimal.valueOf(cartItem.getQuantity()));
                 totalOriginalPrice = totalOriginalPrice.add(itemOriginalPrice);

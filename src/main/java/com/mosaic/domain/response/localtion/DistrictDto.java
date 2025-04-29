@@ -1,13 +1,13 @@
-package com.mosaic.domain.localtion;
+package com.mosaic.domain.response.localtion;
 
 import lombok.Data;
 
 import java.util.List;
 
 @Data
-public class ProvinceDto {
+public class DistrictDto {
     private String name;
     private String code;
     private String division_type;
-    private List<DistrictDto> districts;
+    private List<WardDto> wards;
 }

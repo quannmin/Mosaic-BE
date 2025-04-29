@@ -1,8 +1,8 @@
 package com.mosaic.service.spec;
 
-import com.mosaic.domain.localtion.DistrictDto;
-import com.mosaic.domain.localtion.ProvinceDto;
-import com.mosaic.domain.localtion.WardDto;
+import com.mosaic.domain.response.localtion.DistrictDto;
+import com.mosaic.domain.response.localtion.ProvinceDto;
+import com.mosaic.domain.response.localtion.WardDto;
 import com.mosaic.domain.request.AddressRequest;
 import com.mosaic.domain.response.AddressResponse;
 import com.mosaic.entity.Address;

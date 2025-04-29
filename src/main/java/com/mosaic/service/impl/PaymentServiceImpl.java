@@ -3,7 +3,7 @@ package com.mosaic.service.impl;
 import com.mosaic.entity.Order;
 import com.mosaic.entity.Payment;
 import com.mosaic.entity.User;
-import com.mosaic.exception.ElementNotFoundException;
+import com.mosaic.exception.custom.ResourceNotFoundException;
 import com.mosaic.repository.PaymentRepository;
 import com.mosaic.service.spec.PaymentService;
 import com.mosaic.service.spec.UserService;
@@ -36,7 +36,11 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     public Payment getPayment(Long id) {
-        return paymentRepository.findById(id).orElseThrow(() -> new ElementNotFoundException("Payment not found!")) ;
+        return paymentRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException(
+                "Payment not found!",
+                "id",
+                id.toString())
+        ) ;
     }
 
     @Override
@@ -57,7 +61,11 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     public Payment getPaymentByReferenceCode(String referenceCode) {
-        return paymentRepository.findByReferenceCode(referenceCode).orElseThrow(() -> new ElementNotFoundException("Payment not found!"));
+        return paymentRepository.findByReferenceCode(referenceCode).orElseThrow(() -> new ResourceNotFoundException(
+                "Payment not found!",
+                "referenceCode",
+                referenceCode
+        ));
     }
 
     @Override

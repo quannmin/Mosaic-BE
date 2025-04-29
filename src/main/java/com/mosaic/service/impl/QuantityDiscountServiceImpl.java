@@ -4,8 +4,8 @@ import com.mosaic.domain.request.QuantityDiscountRequest;
 import com.mosaic.domain.response.QuantityDiscountResponse;
 import com.mosaic.entity.ProductVariant;
 import com.mosaic.entity.QuantityDiscount;
-import com.mosaic.exception.DuplicateElementException;
-import com.mosaic.exception.ElementNotFoundException;
+import com.mosaic.exception.custom.DuplicateResourceException;
+import com.mosaic.exception.custom.ResourceNotFoundException;
 import com.mosaic.mapper.QuantityDiscountMapper;
 import com.mosaic.repository.QuantityDiscountRepository;
 import com.mosaic.service.spec.ProductVariantService;
@@ -27,7 +27,10 @@ public class QuantityDiscountServiceImpl implements QuantityDiscountService {
     @Override
     public QuantityDiscountResponse findQuantityDiscountById(Long id) {
         return quantityDiscountMapper.toQuantityDiscountResponse(
-                quantityDiscountRepository.findById(id).orElseThrow(() -> new ElementNotFoundException("Not found quantity discount"))
+                quantityDiscountRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException(
+                        "Quantity discount",
+                        "id", id
+                ))
         );
     }
 
@@ -46,7 +49,7 @@ public class QuantityDiscountServiceImpl implements QuantityDiscountService {
         if(quantityDiscountRepository.existsByProductVariantIdAndMinQuantity(
                 request.getProductVariantId(), request.getMinQuantity()))
         {
-            throw new DuplicateElementException("A discount for this quantity already exists for this product variant");
+            throw new DuplicateResourceException("Product variant", "minQuantity", request.getMinQuantity());
         }
 
         QuantityDiscount quantityDiscount = quantityDiscountMapper.toQuantityDiscount(request);
@@ -57,8 +60,10 @@ public class QuantityDiscountServiceImpl implements QuantityDiscountService {
     @Override
     @Transactional
     public QuantityDiscountResponse updateQuantityDiscount(Long id, QuantityDiscountRequest request) {
-        QuantityDiscount discount = quantityDiscountRepository.findById(id)
-                .orElseThrow(() -> new ElementNotFoundException("Quantity discount not found"));
+        QuantityDiscount discount = quantityDiscountRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException(
+                "Quantity discount",
+                "id", id
+        ));
 
         ProductVariant variant = productVariantService.findProductVariantById(request.getProductVariantId());
 
@@ -66,8 +71,7 @@ public class QuantityDiscountServiceImpl implements QuantityDiscountService {
                 !discount.getMinQuantity().equals(request.getMinQuantity())) {
             if (quantityDiscountRepository.existsByProductVariantIdAndMinQuantity(
                     request.getProductVariantId(), request.getMinQuantity())) {
-                throw new DuplicateElementException(
-                        "A discount for this quantity already exists for this product variant");
+                throw new DuplicateResourceException("Product variant", "minQuantity", request.getMinQuantity());
             }
         }
         discount.setProductVariant(variant);
@@ -80,9 +84,7 @@ public class QuantityDiscountServiceImpl implements QuantityDiscountService {
     @Override
     @Transactional
     public void deleteQuantityDiscount(Long id) {
-        if (!quantityDiscountRepository.existsById(id)) {
-            throw new ElementNotFoundException("Quantity discount not found");
-        }
+        findQuantityDiscountById(id);
         quantityDiscountRepository.deleteById(id);
     }
 }

@@ -5,8 +5,8 @@ import com.mosaic.domain.response.OrderResponse;
 import com.mosaic.entity.Order;
 import com.mosaic.entity.OrderDetail;
 import com.mosaic.entity.ProductVariant;
-import com.mosaic.exception.ElementNotFoundException;
-import com.mosaic.exception.InsufficientStockException;
+import com.mosaic.exception.custom.InsufficientStockException;
+import com.mosaic.exception.custom.ResourceNotFoundException;
 import com.mosaic.mapper.OrderMapper;
 import com.mosaic.repository.OrderDetailRepository;
 import com.mosaic.repository.OrderRepository;
@@ -130,13 +130,13 @@ public class OrderServiceImpl implements OrderService {
     @Override
     public OrderResponse findOrderResponseById(Long orderId) {
         return orderMapper.toOrderResponse(orderRepository.findById(orderId)
-                .orElseThrow(() -> new ElementNotFoundException("Order not found!")));
+                .orElseThrow(() -> new ResourceNotFoundException("Order", "id", orderId.toString())));
     }
 
     @Override
     public Order findOrderById(Long orderId) {
         return orderRepository.findById(orderId)
-                .orElseThrow(() -> new ElementNotFoundException("Order not found!"));
+                .orElseThrow(() -> new ResourceNotFoundException("Order", "id", orderId.toString()));
     }
 
     @Override

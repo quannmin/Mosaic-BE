@@ -1,12 +1,12 @@
 package com.mosaic.service.impl;
 
-import com.mosaic.domain.localtion.DistrictDto;
-import com.mosaic.domain.localtion.ProvinceDto;
-import com.mosaic.domain.localtion.WardDto;
+import com.mosaic.domain.response.localtion.DistrictDto;
+import com.mosaic.domain.response.localtion.ProvinceDto;
+import com.mosaic.domain.response.localtion.WardDto;
 import com.mosaic.domain.request.AddressRequest;
 import com.mosaic.domain.response.AddressResponse;
 import com.mosaic.entity.*;
-import com.mosaic.exception.ElementNotFoundException;
+import com.mosaic.exception.custom.ResourceNotFoundException;
 import com.mosaic.mapper.AddressMapper;
 import com.mosaic.repository.AddressRepository;
 import com.mosaic.repository.DistrictRepository;
@@ -70,7 +70,7 @@ public class AddressServiceImpl implements AddressService {
 
     @Override
     public Address findAddressById(Long id) {
-        return addressRepository.findById(id).orElseThrow(() -> new ElementNotFoundException("Address not found!"));
+        return addressRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Address", "id", id));
     }
 
     @Override
@@ -156,7 +156,8 @@ public class AddressServiceImpl implements AddressService {
 
     @Override
     public Province findProvinceById(String provinceCode) {
-        return provinceRepository.findById(provinceCode).orElseThrow(() -> new ElementNotFoundException("Province not found!"));
+        return provinceRepository.findById(provinceCode).orElseThrow(() -> new ResourceNotFoundException(
+                "Province", "provinceCode", provinceCode));
     }
 
     @Override
@@ -193,7 +194,8 @@ public class AddressServiceImpl implements AddressService {
 
     @Override
     public District findDistrictById(String districtCode) {
-        return districtRepository.findById(districtCode).orElseThrow(() -> new ElementNotFoundException("District not found!"));
+        return districtRepository.findById(districtCode).orElseThrow(() -> new ResourceNotFoundException(
+                "District", "districtCode", districtCode));
     }
 
     @Override
@@ -230,7 +232,8 @@ public class AddressServiceImpl implements AddressService {
 
     @Override
     public Ward findWardById(String wardCode) {
-        return wardRepository.findById(wardCode).orElseThrow(() -> new ElementNotFoundException("Ward not found!"));
+        return wardRepository.findById(wardCode).orElseThrow(() -> new ResourceNotFoundException(
+                "Ward", "wardCode", wardCode));
     }
 
     @Override

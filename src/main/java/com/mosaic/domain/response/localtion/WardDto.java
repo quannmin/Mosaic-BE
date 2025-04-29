@@ -1,4 +1,4 @@
-package com.mosaic.domain.localtion;
+package com.mosaic.domain.response.localtion;
 
 import lombok.Data;
 

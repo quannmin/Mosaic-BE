@@ -3,6 +3,7 @@ package com.mosaic.entity;
 import com.mosaic.util.constant.GenderEnum;
 import com.mosaic.util.constant.RoleEnum;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
@@ -23,16 +24,23 @@ public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;
+    @Column(unique = true)
     String userName;
     String fullName;
+    @Column(unique = true)
     String email;
     String password;
+    @Column(unique = true)
     String phoneNumber;
     Date dob;
+    boolean isVerifiedPhone;
     @Enumerated(EnumType.STRING)
     RoleEnum role;
     @Enumerated(EnumType.STRING)
     GenderEnum gender;
+    @NotNull
+    @Column(nullable = false)
+    private boolean activated = false;
     @CreatedDate
     @Column(updatable = false, nullable = false)
     Instant createdAt;
