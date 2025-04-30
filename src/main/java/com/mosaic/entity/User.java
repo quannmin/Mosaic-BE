@@ -26,6 +26,7 @@ public class User {
     Long id;
     @Column(unique = true)
     String userName;
+    boolean usernameUpdated = false;
     String fullName;
     @Column(unique = true)
     String email;

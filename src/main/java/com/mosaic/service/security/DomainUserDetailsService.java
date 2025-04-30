@@ -24,7 +24,7 @@ public class DomainUserDetailsService implements UserDetailsService {
     @Override
     @Transactional(readOnly = true)
     public UserDetails loadUserByUsername(final String input) throws UsernameNotFoundException {
-        User user = null;
+        User user;
         if(new EmailValidator().isValid(input, null)) {
             user = userRepository.findUerByEmailOrUserNameOrPhoneNumber(input, input, input)
                     .orElseThrow(() -> new ResourceNotFoundException("User", "email", input));
@@ -38,9 +38,7 @@ public class DomainUserDetailsService implements UserDetailsService {
 
         List<SimpleGrantedAuthority> grantedAuthorities = new ArrayList<>();
         grantedAuthorities.add(new SimpleGrantedAuthority("ROLE_" + user.getRole()));
-
-
-        return new org.springframework.security.core.userdetails.User(input, user.getPassword(), new ArrayList<>());
+        return new org.springframework.security.core.userdetails.User(input, user.getPassword(), grantedAuthorities);
     }
 
     private boolean isPhoneNumber(String input) {
