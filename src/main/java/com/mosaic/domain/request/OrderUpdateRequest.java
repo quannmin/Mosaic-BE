@@ -5,33 +5,17 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.math.BigDecimal;
-import java.util.List;
 
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class OrderCreateRequest
-{
-    Long userId;
+public class OrderUpdateRequest {
     Long addressId;
     PaymentMethodEnum paymentMethod;
     Double shippingPrice;
     BigDecimal totalOriginalItemsPrice;
     BigDecimal totalAppliedItemsPrice;
     BigDecimal totalPrice;
-    List<OrderDetailCreateRequest> items;
-
-    @Data
-    @Builder
-    @AllArgsConstructor
-    @NoArgsConstructor
-    @FieldDefaults(level = AccessLevel.PRIVATE)
-    public static class OrderDetailCreateRequest {
-        Long productVariantId;
-        BigDecimal originalPrice;
-        BigDecimal appliedPrice;
-        int quantity;
-    }
 }

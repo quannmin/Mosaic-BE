@@ -47,6 +47,11 @@ app:
         base64-secret: ${JWT_BASE64_SECRET_KEY}
         token-validity-in-seconds: 86400
         token-validity-in-seconds-for-remember-me: 2592000
+        refresh-token:
+          token-validity-in-seconds: 604800000
+  otp:
+    expiry-minutes: 5
+    max-attempts: 3
 
 server:
   port: 8080

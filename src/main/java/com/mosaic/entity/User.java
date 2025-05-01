@@ -50,10 +50,13 @@ public class User {
     Instant updatedAt;
     String createdBy;
     String updatedBy;
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
+    RefreshToken refreshTokens;
     @OneToMany(mappedBy = "user")
     List<Address> addresses;
     @OneToMany(mappedBy = "user")
     List<Order> orders;
     @OneToMany(mappedBy = "user")
     List<Payment> payments;
+
 }

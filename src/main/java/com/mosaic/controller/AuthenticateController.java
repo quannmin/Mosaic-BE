@@ -1,7 +1,12 @@
 package com.mosaic.controller;
 
 import com.mosaic.domain.request.Authentication.LoginRequest;
+import com.mosaic.domain.request.Authentication.PasswordRequests;
+import com.mosaic.domain.request.Authentication.RegisterRequest;
+import com.mosaic.domain.request.Authentication.VerificationRequests;
 import com.mosaic.domain.response.ApiResponse;
+import com.mosaic.domain.response.UserResponse;
+import com.mosaic.service.spec.AuthService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.*;
@@ -19,10 +24,7 @@ import org.springframework.security.oauth2.jwt.JwsHeader;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -44,6 +46,7 @@ public class AuthenticateController {
     private long tokenValidityInSecondsForRememberMe;
 
     private final JwtEncoder jwtEncoder;
+    private final AuthService authService;
 
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<JWTToken>> login(@Valid LoginRequest loginRequest) {
@@ -66,6 +69,54 @@ public class AuthenticateController {
                         .code(HttpStatus.OK.value())
                         .success(true)
                 .build());
+    }
+
+    @PostMapping("/register")
+    public ResponseEntity<ApiResponse<UserResponse>> register (@RequestBody RegisterRequest registerRequest) {
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(ApiResponse.<UserResponse>builder()
+                        .data(authService.register(registerRequest))
+                        .message("Register user successfully!")
+                        .code(HttpStatus.CREATED.value())
+                        .success(true)
+                        .build());
+    }
+
+    @PostMapping("/verify-otp")
+    public ResponseEntity<ApiResponse<Boolean>> verifyOtp(@RequestBody VerificationRequests.VerifyOtpRequest verifyOtpRequest) {
+        boolean isValid = authService.verifyOtp(verifyOtpRequest);
+        if (isValid) {
+            return ResponseEntity.ok(ApiResponse.<Boolean>builder()
+                    .success(true)
+                    .message("Mã OTP hợp lệ")
+                    .code(HttpStatus.OK.value())
+                    .data(true)
+                    .build());
+        } else {
+            return ResponseEntity.badRequest().body(ApiResponse.<Boolean>builder()
+                    .success(false)
+                    .message("Mã OTP không hợp lệ hoặc đã hết hạn")
+                    .code(HttpStatus.BAD_REQUEST.value())
+                    .data(false)
+                    .build());
+        }
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<ApiResponse<Void>> resetPassword(@Valid @RequestBody PasswordRequests.ResetPasswordRequest request) {
+        boolean success = authService.resetPassword(request);
+        return getApiResponseResponseEntity(success);
+    }
+
+
+    @PostMapping("/users/{id}/change-password")
+    public ResponseEntity<ApiResponse<Void>> changePassword(
+            @PathVariable Long id,
+            @Valid @RequestBody PasswordRequests.ChangePasswordRequest request)
+    {
+        boolean success = authService.changePassword(id, request);
+        return getApiResponseResponseEntity(success);
     }
 
     @GetMapping
@@ -100,7 +151,7 @@ public class AuthenticateController {
         }
     }
 
-    public String createToken(Authentication authentication, boolean rememberMe) {
+    private String createToken(Authentication authentication, boolean rememberMe) {
         String authorities = authentication.getAuthorities()
                 .stream()
                 .map(GrantedAuthority::getAuthority)
@@ -125,6 +176,21 @@ public class AuthenticateController {
         return this.jwtEncoder.encode(JwtEncoderParameters.from(jwsHeader, claims)).getTokenValue();
     }
 
+    private ResponseEntity<ApiResponse<Void>> getApiResponseResponseEntity(boolean success) {
+        if (success) {
+            return ResponseEntity.ok(ApiResponse.<Void>builder()
+                    .success(true)
+                    .message("Mật khẩu đã được đặt lại thành công")
+                    .code(HttpStatus.OK.value())
+                    .build());
+        } else {
+            return ResponseEntity.badRequest().body(ApiResponse.<Void>builder()
+                    .success(false)
+                    .message("Không thể đặt lại mật khẩu")
+                    .code(HttpStatus.BAD_REQUEST.value())
+                    .build());
+        }
+    }
     @Data
     @Builder
     @AllArgsConstructor

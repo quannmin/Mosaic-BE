@@ -1,9 +1,12 @@
 package com.mosaic.controller;
 
 import com.mosaic.domain.request.OrderCreateRequest;
+import com.mosaic.domain.request.OrderUpdateRequest;
 import com.mosaic.domain.response.ApiResponse;
 import com.mosaic.domain.response.OrderResponse;
 import com.mosaic.service.spec.OrderService;
+import com.mosaic.util.constant.OrderStatusEnum;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -55,6 +58,27 @@ public class OrderController {
                 .message("Get all orders successfully!")
                 .code(HttpStatus.OK.value())
                 .success(true)
+                .build());
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<ApiResponse<OrderResponse>> updateOrder(@PathVariable Long id, @RequestBody @Valid OrderUpdateRequest request) {
+        return ResponseEntity.ok(ApiResponse.<OrderResponse>builder()
+                .success(true)
+                .message("Update order successfully!")
+                .code(HttpStatus.OK.value())
+                .data(orderService.updateOrder(id, request))
+                .build());
+    }
+
+    @PutMapping("/{id}/status")
+    public ResponseEntity<ApiResponse<Void>> updateStatusOrder(@PathVariable Long id, OrderStatusEnum status) {
+        orderService.updateOrderStatus(id, status);
+        return ResponseEntity.ok(ApiResponse.<Void>builder()
+                .success(true)
+                .message("Update order status successfully!")
+                .code(HttpStatus.OK.value())
+                .data(null)
                 .build());
     }
 

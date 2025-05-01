@@ -1,20 +1,16 @@
 package com.mosaic.service.impl;
 
 import com.mosaic.domain.request.OrderCreateRequest;
+import com.mosaic.domain.request.OrderUpdateRequest;
 import com.mosaic.domain.response.OrderResponse;
-import com.mosaic.entity.Order;
-import com.mosaic.entity.OrderDetail;
-import com.mosaic.entity.ProductVariant;
+import com.mosaic.entity.*;
 import com.mosaic.exception.custom.InsufficientStockException;
 import com.mosaic.exception.custom.ResourceNotFoundException;
 import com.mosaic.mapper.OrderMapper;
 import com.mosaic.repository.OrderDetailRepository;
 import com.mosaic.repository.OrderRepository;
 import com.mosaic.repository.ProductVariantRepository;
-import com.mosaic.service.spec.CartService;
-import com.mosaic.service.spec.OrderService;
-import com.mosaic.service.spec.PaymentService;
-import com.mosaic.service.spec.ProductVariantService;
+import com.mosaic.service.spec.*;
 import com.mosaic.util.constant.OrderStatusEnum;
 import com.mosaic.util.constant.PaymentMethodEnum;
 import com.mosaic.util.constant.PaymentStatusEnum;
@@ -39,6 +35,8 @@ public class OrderServiceImpl implements OrderService {
     private final CartService cartService;
     private final ProductVariantService productVariantService;
     private final PaymentService paymentService;
+    private final AddressService addressService;
+    private final UserService userService;
     private final OrderMapper orderMapper;
 
 
@@ -52,6 +50,9 @@ public class OrderServiceImpl implements OrderService {
             }
         }
 
+        User user = userService.findUserById(orderCreateRequest.getUserId());
+        Address address = addressService.findAddressById(orderCreateRequest.getAddressId());
+
         Order order = Order.builder()
                 .shippingPrice(orderCreateRequest.getShippingPrice())
                 .totalAppliedItemsPrice(orderCreateRequest.getTotalAppliedItemsPrice())
@@ -59,6 +60,8 @@ public class OrderServiceImpl implements OrderService {
                 .totalPrice(orderCreateRequest.getTotalPrice())
                 .status(OrderStatusEnum.ORDERED)
                 .orderNumber(generateOrderNumber())
+                .user(user)
+                .address(address)
                 .build();
 
         switch (orderCreateRequest.getPaymentMethod()) {
@@ -106,6 +109,18 @@ public class OrderServiceImpl implements OrderService {
         return orderMapper.toOrderResponse(order);
     }
 
+    @Override
+    public OrderResponse updateOrder(Long orderId, OrderUpdateRequest orderUpdateRequest) {
+
+        Address address = addressService.findAddressById(orderId);
+
+        Order existingOrder = findOrderById(orderUpdateRequest.getOrderId());
+        orderMapper.toUpdateOrderResponse(orderUpdateRequest, existingOrder);
+        existingOrder.setAddress(address);
+
+        return orderMapper.toOrderResponse(existingOrder);
+    }
+
     private String createReferenceCode () {
         return UUID.randomUUID().toString();
     }
@@ -140,11 +155,10 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public OrderResponse updateOrderStatus(Long orderId, OrderStatusEnum status) {
+    public void updateOrderStatus(Long orderId, OrderStatusEnum status) {
         Order order = findOrderById(orderId);
         order.setStatus(status);
-
-        return orderMapper.toOrderResponse(orderRepository.save(order));
+        orderRepository.save(order);
     }
 
     @Override

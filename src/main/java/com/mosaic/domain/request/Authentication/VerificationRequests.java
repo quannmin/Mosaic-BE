@@ -1,4 +1,5 @@
 package com.mosaic.domain.request.Authentication;
+import jakarta.validation.constraints.Email;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -21,18 +22,10 @@ public class VerificationRequests {
     @AllArgsConstructor
     @NoArgsConstructor
     @FieldDefaults(level = AccessLevel.PRIVATE)
-    public static class RequestOtpRequest {
-        @NotBlank(message = "Phone number is required")
-        @Pattern(regexp = "^[0-9]{10,12}$", message = "Phone number must be 10-12 digits")
-        String phoneNumber;
-    }
-
-    @Data
-    @AllArgsConstructor
-    @NoArgsConstructor
-    @FieldDefaults(level = AccessLevel.PRIVATE)
     public static class VerifyOtpRequest {
-        @NotBlank(message = "Phone number is required")
+        @Email(message = "Invalid email format")
+        String email;
+
         @Pattern(regexp = "^[0-9]{10,12}$", message = "Phone number must be 10-12 digits")
         String phoneNumber;
 
