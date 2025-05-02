@@ -24,4 +24,5 @@ public class UserResponse {
     Date dob;
     RoleEnum role;
     GenderEnum gender;
+    boolean activated;
 }

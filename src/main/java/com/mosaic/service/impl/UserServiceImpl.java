@@ -64,13 +64,11 @@ public class UserServiceImpl implements UserService {
     public UserResponse updateUser(Long id, UserUpdateRequest userUpdateRequest) {
         User user = findUserById(id);
         if (userUpdateRequest.getEmail() != null &&
-                !user.getEmail().equals(userUpdateRequest.getEmail()) &&
                 userRepository.existsByEmail(userUpdateRequest.getEmail()))
         {
             throw new DuplicateResourceException("User", "Email", userUpdateRequest.getEmail());
         }
         if (userUpdateRequest.getPhoneNumber() != null &&
-                !user.getPhoneNumber().equals(userUpdateRequest.getPhoneNumber()) &&
                 userRepository.existsByPhoneNumber(userUpdateRequest.getPhoneNumber())) {
             throw new DuplicateResourceException("User", "Phone number", userUpdateRequest.getPhoneNumber());
         }
@@ -115,7 +113,12 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public User findUserById(Long id) {
-        return userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User", "id", id.toString()));
+        return userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User", "id", id));
+    }
+
+    @Override
+    public User findByUsername(String username) {
+        return userRepository.findByUserName(username).orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
     }
 
     @Override

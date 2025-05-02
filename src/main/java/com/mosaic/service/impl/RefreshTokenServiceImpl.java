@@ -3,59 +3,63 @@ package com.mosaic.service.impl;
 import com.mosaic.entity.RefreshToken;
 import com.mosaic.entity.User;
 import com.mosaic.exception.custom.ResourceNotFoundException;
-import com.mosaic.exception.custom.TokenRefreshException;
 import com.mosaic.repository.RefreshTokenRepository;
 import com.mosaic.repository.UserRepository;
 import com.mosaic.service.spec.RefreshTokenService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.util.Optional;
+import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class RefreshTokenServiceImpl implements RefreshTokenService {
-    @Value("${app.security.authentication.jwt.refresh-token.token-validity-in-seconds}")
-    private long refreshTokenDurationMs;
 
     private final RefreshTokenRepository refreshTokenRepository;
     private final UserRepository userRepository;
 
 
     @Override
-    public RefreshToken createRefreshToken(Long userId) {
+    public RefreshToken createRefreshToken(Long userId, long refreshTokenDuration) {
         User user = userRepository.findById(userId).orElseThrow(() ->
                 new ResourceNotFoundException("User", "id", userId.toString()));
-
-        RefreshToken refreshToken = RefreshToken.builder()
-                .user(user)
-                .expiryDate(Instant.now().plusMillis(refreshTokenDurationMs))
-                .token(UUID.randomUUID().toString())
-                .build();
-        return refreshTokenRepository.save(refreshToken);
+        RefreshToken existingToken = refreshTokenRepository.findByUser(user);
+        if (existingToken != null) {
+            String token = UUID.randomUUID().toString();
+            existingToken.setToken(token);
+            existingToken.setExpiryDate(Instant.now().plus(refreshTokenDuration, ChronoUnit.SECONDS));
+            existingToken.setRevoked(false);
+            return refreshTokenRepository.save(existingToken);
+        } else {
+            RefreshToken refreshToken = RefreshToken.builder()
+                    .user(user)
+                    .token(UUID.randomUUID().toString())
+                    .expiryDate(Instant.now().plus(refreshTokenDuration, ChronoUnit.SECONDS))
+                    .build();
+            return refreshTokenRepository.save(refreshToken);
+        }
     }
 
     @Override
-    public RefreshToken verifyExpiration(RefreshToken token) {
+    public boolean verifyExpiration(RefreshToken token) {
         if(token.isRevoked()){
-            throw new TokenRefreshException(token.getToken(), "Refresh token has been revoked");
+            return false;
         }
 
         if (token.getExpiryDate().isBefore(Instant.now())) {
             refreshTokenRepository.delete(token);
-            throw new TokenRefreshException(token.getToken(), "Refresh token has expired");
+            return false;
         }
-
-        return token;
+        return true;
     }
 
     @Override
-    public Optional<RefreshToken> findByToken(String token) {
-        return refreshTokenRepository.findByToken(token);
+    public RefreshToken findByToken(String token) {
+        return refreshTokenRepository.findByToken(token).orElseThrow(() ->
+                new ResourceNotFoundException("Refresh token", "token", token));
     }
 
     @Override
@@ -67,5 +71,17 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
     @Override
     public boolean isTokenValid(String token) {
         return refreshTokenRepository.existsByTokenAndRevokedFalse(token);
+    }
+
+    @Override
+    public RefreshToken updateExpiryDate(RefreshToken refreshToken, long refreshTokenDuration) {
+        refreshToken.setExpiryDate(Instant.now().plus(refreshTokenDuration, ChronoUnit.SECONDS));
+        return refreshTokenRepository.save(refreshToken);
+    }
+
+    @Override
+    @Transactional
+    public void deleteByToken(String token) {
+        refreshTokenRepository.deleteByToken(token);
     }
 }

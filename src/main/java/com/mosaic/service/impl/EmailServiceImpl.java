@@ -20,6 +20,7 @@ public class EmailServiceImpl implements EmailService {
             SimpleMailMessage message = new SimpleMailMessage();
             message.setTo(to);
             message.setSubject(subject);
+            message.setText(body);
             mailSender.send(message);
         } catch (MessagingException e) {
             throw new MessagingException("Failed to send email to {}: {}", to, e.getMessage());

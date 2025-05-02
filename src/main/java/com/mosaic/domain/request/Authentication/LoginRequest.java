@@ -15,7 +15,8 @@ public class LoginRequest {
     @Size(min = 1, max = 50)
     String input;
     @NotNull
-    @Size(min = 4, max = 100)
+    @Size(min = 4, max = 100, message = "Password must be at least 4 characters")
     String password;
+
     boolean rememberMe;
 }

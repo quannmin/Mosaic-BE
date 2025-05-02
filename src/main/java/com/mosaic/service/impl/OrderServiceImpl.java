@@ -114,7 +114,7 @@ public class OrderServiceImpl implements OrderService {
 
         Address address = addressService.findAddressById(orderId);
 
-        Order existingOrder = findOrderById(orderUpdateRequest.getOrderId());
+        Order existingOrder = findOrderById(orderId);
         orderMapper.toUpdateOrderResponse(orderUpdateRequest, existingOrder);
         existingOrder.setAddress(address);
 

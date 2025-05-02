@@ -1,13 +1,20 @@
 package com.mosaic.controller;
 
-import com.mosaic.domain.request.Authentication.LoginRequest;
-import com.mosaic.domain.request.Authentication.PasswordRequests;
-import com.mosaic.domain.request.Authentication.RegisterRequest;
-import com.mosaic.domain.request.Authentication.VerificationRequests;
+import com.mosaic.domain.request.Authentication.*;
 import com.mosaic.domain.response.ApiResponse;
+import com.mosaic.domain.response.TokenRefreshResponse;
 import com.mosaic.domain.response.UserResponse;
+import com.mosaic.entity.RefreshToken;
+import com.mosaic.entity.User;
+import com.mosaic.exception.custom.ResourceNotFoundException;
+import com.mosaic.exception.custom.TokenRefreshException;
+import com.mosaic.service.security.SecurityUtils;
 import com.mosaic.service.spec.AuthService;
+import com.mosaic.service.spec.RefreshTokenService;
+import com.mosaic.service.spec.UserService;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.*;
 import org.springframework.beans.factory.annotation.Value;
@@ -19,15 +26,9 @@ import org.springframework.security.config.annotation.authentication.builders.Au
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
-import org.springframework.security.oauth2.jwt.JwsHeader;
-import org.springframework.security.oauth2.jwt.JwtClaimsSet;
-import org.springframework.security.oauth2.jwt.JwtEncoder;
-import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -37,19 +38,17 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class AuthenticateController {
 
+    @Value("${app.security.authentication.jwt.refresh-token.token-validity-in-seconds}")
+    private long refreshTokenValidityInSeconds;
+    @Value("${app.security.authentication.jwt.refresh-token.token-validity-in-seconds-for-remember-me}")
+    private long refreshTokenValidityInSecondsForRememberMe;
+
     private final AuthenticationManagerBuilder authenticationManagerBuilder;
-
-    @Value("${app.security.authentication.jwt.token-validity-in-seconds:0}")
-    private long tokenValidityInSeconds;
-
-    @Value("${app.security.authentication.jwt.token-validity-in-seconds-for-remember-me:0}")
-    private long tokenValidityInSecondsForRememberMe;
-
-    private final JwtEncoder jwtEncoder;
     private final AuthService authService;
+    private final RefreshTokenService refreshTokenService;
 
     @PostMapping("/login")
-    public ResponseEntity<ApiResponse<JWTToken>> login(@Valid LoginRequest loginRequest) {
+    public ResponseEntity<ApiResponse<String>> login(@Valid @RequestBody LoginRequest loginRequest, HttpServletResponse response) {
         UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
                 loginRequest.getInput(),
                 loginRequest.getPassword()
@@ -57,22 +56,107 @@ public class AuthenticateController {
 
         Authentication authentication = authenticationManagerBuilder.getObject().authenticate(authenticationToken);
         SecurityContextHolder.getContext().setAuthentication(authentication);
-        String jwt = this.createToken(authentication, loginRequest.isRememberMe());
+        String accessToken = authService.generateToken(authentication);
+
+        long refreshTokenDuration = loginRequest.isRememberMe()
+                ? refreshTokenValidityInSecondsForRememberMe
+                : refreshTokenValidityInSeconds;
+
+        RefreshToken refreshToken = refreshTokenService.createRefreshToken(
+                SecurityUtils.getUserIdFromAuthentication(),
+                refreshTokenDuration
+        );
+
+        Cookie refreshTokenCookie = new Cookie("refresh_token", refreshToken.getToken());
+
+        if(loginRequest.isRememberMe()) {
+            refreshTokenCookie.setMaxAge((int) refreshTokenDuration);
+        }
+
+        refreshTokenCookie.setHttpOnly(true);
+        refreshTokenCookie.setSecure(true);
+        refreshTokenCookie.setPath("/");
+
+        response.addCookie(refreshTokenCookie);
+
         HttpHeaders headers = new HttpHeaders();
-        headers.setBearerAuth(jwt);
+        headers.setBearerAuth(accessToken);
         return ResponseEntity
                 .ok()
                 .headers(headers)
-                .body(ApiResponse.<JWTToken>builder()
-                        .data(new JWTToken(jwt))
+                .body(ApiResponse.<String>builder()
+                        .data(accessToken)
                         .message("Login successfully!")
                         .code(HttpStatus.OK.value())
                         .success(true)
                 .build());
     }
 
+    @PostMapping("/refresh")
+    public ResponseEntity<ApiResponse<String>> refreshToken(HttpServletRequest request, HttpServletResponse response) {
+
+        String refreshToken = null;
+        Cookie[] cookies = request.getCookies();
+
+        if(cookies != null) {
+            for(Cookie cookie : cookies) {
+                if(cookie.getName().equals("refresh_token")) {
+                    refreshToken = cookie.getValue();
+                    break;
+                }
+            }
+        }
+
+        if(refreshToken == null) {
+            return ResponseEntity
+                    .status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.<String>builder()
+                            .success(false)
+                            .message("Refresh token not found in cookie!")
+                            .code(HttpStatus.UNAUTHORIZED.value())
+                            .build());
+        }
+
+        RefreshToken refreshTokenEntity = refreshTokenService.findByToken(refreshToken);
+        boolean isValid = refreshTokenService.verifyExpiration(refreshTokenEntity);
+        if(!isValid) {
+            Cookie refreshTokenCookie = new Cookie("refresh_token", null);
+            refreshTokenCookie.setMaxAge(0);
+            refreshTokenCookie.setHttpOnly(true);
+            refreshTokenCookie.setSecure(true);
+            refreshTokenCookie.setPath("/");
+            response.addCookie(refreshTokenCookie);
+
+            return ResponseEntity
+                    .status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.<String>builder()
+                            .success(false)
+                            .message("Refresh token has expired or revoked!")
+                            .code(HttpStatus.UNAUTHORIZED.value())
+                            .build());
+        }
+        refreshTokenEntity = refreshTokenService.updateExpiryDate(refreshTokenEntity, refreshTokenValidityInSeconds);
+        String newAccessToken = authService.generateToken(refreshTokenEntity.getUser());
+
+        long secondsUntilExpiry = refreshTokenEntity.getExpiryDate().getEpochSecond() - Instant.now().getEpochSecond();
+
+        Cookie refreshTokenCookie = new Cookie("refresh_token", refreshTokenEntity.getToken());
+        refreshTokenCookie.setMaxAge((int) secondsUntilExpiry);
+        refreshTokenCookie.setHttpOnly(true);
+        refreshTokenCookie.setSecure(true);
+        refreshTokenCookie.setPath("/");
+
+        response.addCookie(refreshTokenCookie);
+        return ResponseEntity.ok(ApiResponse.<String>builder()
+                .data(newAccessToken)
+                .code(HttpStatus.OK.value())
+                .success(true)
+                .message("Fetch refresh token successfully!")
+                .build());
+    }
+
     @PostMapping("/register")
-    public ResponseEntity<ApiResponse<UserResponse>> register (@RequestBody RegisterRequest registerRequest) {
+    public ResponseEntity<ApiResponse<UserResponse>> register (@Valid @RequestBody RegisterRequest registerRequest) {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(ApiResponse.<UserResponse>builder()
@@ -81,6 +165,26 @@ public class AuthenticateController {
                         .code(HttpStatus.CREATED.value())
                         .success(true)
                         .build());
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<ApiResponse<Boolean>> forgotPassword(@RequestBody PasswordRequests.ForgotPasswordRequest request) {
+        boolean isValid = authService.forgotPassword(request);
+        if (isValid) {
+            return ResponseEntity.ok(ApiResponse.<Boolean>builder()
+                    .success(true)
+                    .message("Send otp forgot password successfully!")
+                    .code(HttpStatus.OK.value())
+                    .data(true)
+                    .build());
+        } else {
+            return ResponseEntity.badRequest().body(ApiResponse.<Boolean>builder()
+                    .success(false)
+                    .message("Send otp forgot password failed!")
+                    .code(HttpStatus.BAD_REQUEST.value())
+                    .data(false)
+                    .build());
+        }
     }
 
     @PostMapping("/verify-otp")
@@ -119,6 +223,40 @@ public class AuthenticateController {
         return getApiResponseResponseEntity(success);
     }
 
+    @PostMapping("/logout")
+    public ResponseEntity<ApiResponse<Void>> logout(HttpServletResponse response, HttpServletRequest request) {
+        String refreshToken = null;
+        Cookie[] cookies = request.getCookies();
+
+        if(cookies != null) {
+            for(Cookie cookie : cookies) {
+                if(cookie.getName().equals("refresh_token")) {
+                    refreshToken = cookie.getValue();
+                    break;
+                }
+            }
+        }
+
+        Cookie refreshTokenCookie = new Cookie("refresh_token", null);
+        refreshTokenCookie.setMaxAge(0);
+        refreshTokenCookie.setHttpOnly(true);
+        refreshTokenCookie.setSecure(true);
+        refreshTokenCookie.setPath("/");
+        response.addCookie(refreshTokenCookie);
+
+        if(refreshToken != null) {
+            refreshTokenService.deleteByToken(refreshToken);
+        }
+
+        SecurityContextHolder.clearContext();
+
+        return ResponseEntity.ok(ApiResponse.<Void>builder()
+                .success(true)
+                .message("Logged out successfully!")
+                .code(HttpStatus.OK.value())
+                .build());
+    }
+
     @GetMapping
     public ResponseEntity<ApiResponse<Object>> isAuthenticated(HttpServletRequest request) {
         String username = request.getRemoteUser();
@@ -151,31 +289,6 @@ public class AuthenticateController {
         }
     }
 
-    private String createToken(Authentication authentication, boolean rememberMe) {
-        String authorities = authentication.getAuthorities()
-                .stream()
-                .map(GrantedAuthority::getAuthority)
-                .collect(Collectors.joining(" "));
-
-        Instant now = Instant.now();
-        Instant validity;
-        if (rememberMe) {
-            validity = now.plus(this.tokenValidityInSecondsForRememberMe, ChronoUnit.SECONDS);
-        } else {
-            validity = now.plus(this.tokenValidityInSeconds, ChronoUnit.SECONDS);
-        }
-
-        JwtClaimsSet claims = JwtClaimsSet.builder()
-                .issuedAt(now)
-                .expiresAt(validity)
-                .subject(authentication.getName())
-                .claim("authorities", authorities)
-                .build();
-
-        JwsHeader jwsHeader = JwsHeader.with(MacAlgorithm.HS512).build();
-        return this.jwtEncoder.encode(JwtEncoderParameters.from(jwsHeader, claims)).getTokenValue();
-    }
-
     private ResponseEntity<ApiResponse<Void>> getApiResponseResponseEntity(boolean success) {
         if (success) {
             return ResponseEntity.ok(ApiResponse.<Void>builder()
@@ -190,12 +303,5 @@ public class AuthenticateController {
                     .code(HttpStatus.BAD_REQUEST.value())
                     .build());
         }
-    }
-    @Data
-    @Builder
-    @AllArgsConstructor
-    @NoArgsConstructor
-    public static class JWTToken {
-        private String idToken;
     }
 }

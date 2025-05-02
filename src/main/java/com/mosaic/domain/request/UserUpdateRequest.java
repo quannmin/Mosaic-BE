@@ -22,4 +22,5 @@ public class UserUpdateRequest {
     Date dob;
     RoleEnum role;
     GenderEnum gender;
+    Boolean activated;
 }

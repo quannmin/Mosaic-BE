@@ -6,13 +6,17 @@ import com.mosaic.exception.custom.TokenRefreshException;
 import java.util.Optional;
 
 public interface RefreshTokenService {
-    RefreshToken createRefreshToken(Long userId);
+    RefreshToken createRefreshToken(Long userId, long refreshTokenDuration);
 
-    RefreshToken verifyExpiration(RefreshToken token) throws TokenRefreshException;
+    boolean verifyExpiration(RefreshToken token) throws TokenRefreshException;
 
-    Optional<RefreshToken> findByToken(String token);
+    RefreshToken findByToken(String token);
 
     void revokeToken(String token);
 
     boolean isTokenValid(String token);
+
+    RefreshToken updateExpiryDate(RefreshToken refreshToken, long refreshTokenDuration);
+
+    void deleteByToken(String token);
 }

@@ -3,8 +3,10 @@ package com.mosaic.service.security;
 import com.mosaic.entity.User;
 import com.mosaic.exception.custom.ResourceNotFoundException;
 import com.mosaic.repository.UserRepository;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.hibernate.validator.internal.constraintvalidators.bv.EmailValidator;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -13,6 +15,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 @Component("userDetailService")
@@ -38,7 +41,19 @@ public class DomainUserDetailsService implements UserDetailsService {
 
         List<SimpleGrantedAuthority> grantedAuthorities = new ArrayList<>();
         grantedAuthorities.add(new SimpleGrantedAuthority("ROLE_" + user.getRole()));
-        return new org.springframework.security.core.userdetails.User(input, user.getPassword(), grantedAuthorities);
+        return new CustomUserDetails(input, user.getPassword(), grantedAuthorities, user.getId());
+    }
+
+    @Getter
+    public static class CustomUserDetails extends org.springframework.security.core.userdetails.User {
+        private final Long userId;
+
+        public CustomUserDetails(String username, String password,
+                                 Collection<? extends GrantedAuthority> authorities,
+                                 Long userId) {
+            super(username, password, authorities);
+            this.userId = userId;
+        }
     }
 
     private boolean isPhoneNumber(String input) {

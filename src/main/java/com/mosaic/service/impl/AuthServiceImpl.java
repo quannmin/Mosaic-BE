@@ -8,22 +8,42 @@ import com.mosaic.entity.User;
 import com.mosaic.exception.custom.BadRequestException;
 import com.mosaic.exception.custom.DuplicateResourceException;
 import com.mosaic.exception.custom.ResourceNotFoundException;
+import com.mosaic.exception.custom.TokenRefreshException;
 import com.mosaic.mapper.UserMapper;
 import com.mosaic.repository.UserRepository;
 import com.mosaic.service.spec.AuthService;
 import com.mosaic.service.spec.EmailService;
 import com.mosaic.service.spec.OtpService;
+import com.mosaic.service.spec.RefreshTokenService;
 import com.mosaic.util.constant.OtpEnum;
+import com.mosaic.util.constant.RoleEnum;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
+import org.springframework.security.oauth2.jwt.JwsHeader;
+import org.springframework.security.oauth2.jwt.JwtClaimsSet;
+import org.springframework.security.oauth2.jwt.JwtEncoder;
+import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
+
+    @Value("${app.security.authentication.jwt.token-validity-in-seconds:0}")
+    private long tokenValidityInSeconds;
 
     private static final String PREFIX = "m_";
     private static final String CHARACTERS = "abcdefghijklmnopqrstuvwxyz";
@@ -34,7 +54,45 @@ public class AuthServiceImpl implements AuthService {
     private final UserMapper userMapper;
     private final EmailService emailService;
     private final OtpService otpService;
+    private final RefreshTokenService refreshTokenService;
+    private final JwtEncoder jwtEncoder;
 
+
+    @Override
+    public String generateToken(Authentication authentication) {
+        String authorities = authentication.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .collect(Collectors.joining(" "));
+        Instant validity = Instant.now().plus(tokenValidityInSeconds, ChronoUnit.SECONDS);
+
+        JwtClaimsSet jwtClaimsSet = JwtClaimsSet.builder()
+                .issuedAt(Instant.now())
+                .expiresAt(validity)
+                .subject(authentication.getName())
+                .claim("authorities", authorities)
+                .build();
+
+        JwsHeader jwsHeader = JwsHeader.with(MacAlgorithm.HS512).build();
+
+        return jwtEncoder.encode(JwtEncoderParameters.from(jwsHeader, jwtClaimsSet)).getTokenValue();
+    }
+
+    @Override
+    public String generateToken(User user) {
+        Instant validity = Instant.now().plus(tokenValidityInSeconds, ChronoUnit.SECONDS);
+        List<SimpleGrantedAuthority> grantedAuthorities = new ArrayList<>();
+        grantedAuthorities.add(new SimpleGrantedAuthority("ROLE_" + user.getRole()));
+        JwtClaimsSet jwtClaimsSet = JwtClaimsSet.builder()
+                .issuedAt(Instant.now())
+                .expiresAt(validity)
+                .subject(user.getUserName() != null ? user.getUserName() : user.getPhoneNumber())
+                .claim("authorities", grantedAuthorities)
+                .build();
+
+        JwsHeader jwsHeader = JwsHeader.with(MacAlgorithm.HS512).build();
+
+        return jwtEncoder.encode(JwtEncoderParameters.from(jwsHeader, jwtClaimsSet)).getTokenValue();
+    }
 
     @Override
     public UserResponse register(RegisterRequest registerRequest) {
@@ -46,6 +104,7 @@ public class AuthServiceImpl implements AuthService {
         user.setUserName(generateUniqueUsername());
         user.setPhoneNumber(registerRequest.getPhoneNumber());
         user.setPassword(passwordEncoder.encode(registerRequest.getPassword()));
+        user.setRole(RoleEnum.CUSTOMER);
         return userMapper.toUserResponse(userRepository.save(user));
     }
 
@@ -95,7 +154,7 @@ public class AuthServiceImpl implements AuthService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId.toString()));
 
-        if(!passwordEncoder.matches(request.getNewPassword(), user.getPassword())) {
+        if(!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
             throw new BadRequestException("Current password is not correct!");
         }
 
@@ -106,6 +165,14 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public void logout(String refreshToken) {
+        if (refreshToken == null || refreshToken.isEmpty()) {
+            throw new BadRequestException("Refresh token cannot be empty!");
+        }
 
+        if (!refreshTokenService.isTokenValid(refreshToken)) {
+            throw new TokenRefreshException(refreshToken, "Refresh token is invalid or has been revoked!");
+        }
+
+        refreshTokenService.revokeToken(refreshToken);
     }
 }

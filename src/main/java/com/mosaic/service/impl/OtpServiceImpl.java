@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import java.util.Random;
 
@@ -31,7 +32,7 @@ public class OtpServiceImpl implements OtpService {
     public String generateOtp(String email, OtpEnum otpEnum) {
         String otp = generateOtpCode();
 
-        Instant expiryDate = Instant.now().plusSeconds(otpExpiryMinutes * 60L);
+        Instant expiryDate = Instant.now().plus(otpExpiryMinutes, ChronoUnit.MINUTES);
 
         Otp otpEntity = Otp.builder()
                 .email(email)
@@ -41,8 +42,7 @@ public class OtpServiceImpl implements OtpService {
                 .type(otpEnum)
                 .build();
         Otp savedOtp = otpRepository.save(otpEntity);
-        otpRepository.invalidateOtherOtpsByEmailAndType(email, otpEnum, savedOtp.getId());
-        return otp;
+        return savedOtp.getOtp();
     }
 
     @Override
@@ -76,7 +76,6 @@ public class OtpServiceImpl implements OtpService {
         if(isValid) {
             otpEntity.setUsed(true);
         }
-
         otpRepository.save(otpEntity);
         return isValid;
     }
