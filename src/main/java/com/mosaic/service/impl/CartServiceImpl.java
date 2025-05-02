@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mosaic.domain.cart.Cart;
 import com.mosaic.domain.cart.CartItem;
 import com.mosaic.entity.Image;
+import com.mosaic.entity.Product;
 import com.mosaic.entity.ProductVariant;
 import com.mosaic.entity.QuantityDiscount;
 import com.mosaic.exception.custom.InsufficientStockException;
@@ -17,12 +18,17 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
 public class CartServiceImpl implements CartService {
+
+    private List<CartItem> items = new ArrayList<>();
+
+
     private final RedisTemplate<String, Object> redisTemplate;
     private final ObjectMapper objectMapper;
     private static final String CART_PREFIX ="cart:";
@@ -49,13 +55,22 @@ public class CartServiceImpl implements CartService {
         if (productVariant.getStockQuantity() < quantity) {
             throw new InsufficientStockException("Not enough items in stock");
         }
+
         Cart cart = getCart(userId);
+
+        if (cart.getItems() == null) {
+            cart.setItems(new ArrayList<>());
+        }
+
         boolean itemExists = false;
-        for (CartItem existingItem : cart.getItems()) {
-            if(existingItem.getProductVariantId().equals(productVariantId)) {
-                existingItem.setQuantity(existingItem.getQuantity() + quantity);
-                itemExists = true;
-                break;
+
+        if(cart.getItems() != null) {
+            for (CartItem existingItem : cart.getItems()) {
+                if (existingItem.getProductVariantId().equals(productVariantId)) {
+                    existingItem.setQuantity(existingItem.getQuantity() + quantity);
+                    itemExists = true;
+                    break;
+                }
             }
         }
         if(!itemExists) {
@@ -67,11 +82,18 @@ public class CartServiceImpl implements CartService {
     }
 
     private CartItem createNewCartItem(ProductVariant productVariant) {
+
+        Product product = productVariant.getProduct();
+
+        if(product == null) {
+            throw new ResourceNotFoundException("Product not found in this product variant");
+        }
+
         CartItem cartItem = new CartItem();
         cartItem.setProductVariantId(productVariant.getId());
-        cartItem.setProductName(productVariant.getProduct().getName());
+        cartItem.setProductName(product.getName());
         cartItem.setColor(productVariant.getColor());
-        cartItem.setOriginalPrice(productVariant.getProduct().getRetailPrice());
+        cartItem.setOriginalPrice(product.getRetailPrice());
         productVariant.getImages().stream()
                 .filter(Image::isMainUrlImage)
                 .findFirst()
@@ -137,7 +159,9 @@ public class CartServiceImpl implements CartService {
                 BigDecimal itemOriginalPrice = cartItem.getOriginalPrice().multiply(BigDecimal.valueOf(cartItem.getQuantity()));
                 totalOriginalPrice = totalOriginalPrice.add(itemOriginalPrice);
 
-                BigDecimal itemAppliedPrice = calculateAppliedPrice(cartItem, productVariant);
+                BigDecimal itemAppliedPrice = calculateAppliedPrice(cartItem, productVariant)
+                        .multiply(BigDecimal.valueOf(cartItem.getQuantity()));
+
                 totalAppliedPrice = totalAppliedPrice.add(itemAppliedPrice);
         }
         cart.setTotalOriginalPrice(totalOriginalPrice);
@@ -152,13 +176,14 @@ public class CartServiceImpl implements CartService {
         BigDecimal originalPrice = productVariant.getProduct().getRetailPrice();
 
         BigDecimal appliedPrice = productVariant.getProduct().getDiscountPrice() != null ?
-                productVariant.getProduct().getDiscountPrice() : originalPrice;
+                originalPrice.subtract(productVariant.getProduct().getDiscountPrice()) : originalPrice;
 
         List<QuantityDiscount> quantityDiscounts = quantityDiscountRepository
                 .findByProductVariantIdOrderByMinQuantityDesc(productVariant.getId());
 
         for (var quantityDiscount : quantityDiscounts) {
             if(item.getQuantity() >= quantityDiscount.getMinQuantity()) {
+
                 BigDecimal discountMultiplier = BigDecimal.ONE.subtract(
                         BigDecimal.valueOf(quantityDiscount.getDiscountPercentage())
                                 .divide(BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP));
@@ -173,6 +198,8 @@ public class CartServiceImpl implements CartService {
             }
         }
         item.setAppliedPrice(appliedPrice);
+        item.setTotalItemsOriginPrice(originalPrice.multiply(BigDecimal.valueOf(item.getQuantity())));
+        item.setTotalItemsAppliedPrice(appliedPrice.multiply(BigDecimal.valueOf(item.getQuantity())));
         return appliedPrice;
     }
 }

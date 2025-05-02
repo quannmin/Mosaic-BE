@@ -1,6 +1,7 @@
 package com.mosaic.controller;
 
 import com.mosaic.domain.cart.Cart;
+import com.mosaic.domain.request.CartCreateRequest;
 import com.mosaic.domain.response.ApiResponse;
 import com.mosaic.service.spec.CartService;
 import lombok.RequiredArgsConstructor;
@@ -16,13 +17,17 @@ public class CartController {
     private final CartService cartService;
 
     @PostMapping
-    public ResponseEntity<ApiResponse<Cart>> addCart(Long userId, Long productVariantId, int quantity) {
+    public ResponseEntity<ApiResponse<Cart>> addCart(@RequestBody CartCreateRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.<Cart>builder()
                         .success(true)
                         .message("Add to cart successfully!")
                         .code(HttpStatus.CREATED.value())
-                        .data(cartService.addCart(userId, productVariantId, quantity))
+                        .data(cartService.addCart(
+                                request.getUserId(),
+                                request.getProductVariantId(),
+                                request.getQuantity())
+                        )
                         .build());
     }
 
@@ -37,7 +42,7 @@ public class CartController {
     }
 
     @DeleteMapping("/users/{userId}")
-    public ResponseEntity<ApiResponse<Cart>> deleteCart(@PathVariable Long userId) {
+    public ResponseEntity<ApiResponse<Cart>> clearCart(@PathVariable Long userId) {
         return ResponseEntity.ok(ApiResponse.<Cart>builder()
                 .success(true)
                 .message("Delete cart successfully!")

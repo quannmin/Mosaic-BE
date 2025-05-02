@@ -17,6 +17,8 @@ public class CartItem {
     int quantity;
     BigDecimal originalPrice;
     BigDecimal appliedPrice;
+    BigDecimal totalItemsOriginPrice;
+    BigDecimal totalItemsAppliedPrice;
     String productName;
     String color;
     String mainImageUrl;

@@ -83,13 +83,19 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public String generateToken(User user) {
         Instant validity = Instant.now().plus(tokenValidityInSeconds, ChronoUnit.SECONDS);
+
         List<SimpleGrantedAuthority> grantedAuthorities = new ArrayList<>();
         grantedAuthorities.add(new SimpleGrantedAuthority("ROLE_" + user.getRole()));
+
+        String authorities = grantedAuthorities.stream()
+                .map(GrantedAuthority::getAuthority)
+                .collect(Collectors.joining(" "));
+
         JwtClaimsSet jwtClaimsSet = JwtClaimsSet.builder()
                 .issuedAt(Instant.now())
                 .expiresAt(validity)
                 .subject(user.getUserName() != null ? user.getUserName() : user.getPhoneNumber())
-                .claim("authorities", grantedAuthorities)
+                .claim("authorities", authorities)
                 .build();
 
         JwsHeader jwsHeader = JwsHeader.with(MacAlgorithm.HS512).build();
