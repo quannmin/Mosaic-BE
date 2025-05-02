@@ -12,6 +12,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 
@@ -23,6 +24,7 @@ import org.springframework.security.web.authentication.www.BasicAuthenticationFi
 public class SecurityConfiguration {
 
     private final CustomAuthenticationEntryPoint authenticationEntryPoint;
+    private final JwtAuthenticationConverter jwtAuthenticationConverter;
 
     private static final String[] PUBLIC_URLS = {
             "/swagger-ui/**",
@@ -75,7 +77,7 @@ public class SecurityConfiguration {
                 .authorizeHttpRequests(
                     request -> request
                             .requestMatchers(PUBLIC_URLS).permitAll()
-                            .requestMatchers(USER_URLS).permitAll()
+                            .requestMatchers(USER_URLS).hasRole("CUSTOMER")
                             .requestMatchers(ADMIN_URLS).hasRole("ADMIN")
                             .requestMatchers(MANAGER_URLS).hasAnyRole("ADMIN", "MANAGER")
                             .anyRequest().authenticated()
@@ -87,7 +89,7 @@ public class SecurityConfiguration {
                 .formLogin(AbstractHttpConfigurer::disable)
                 .oauth2ResourceServer(oauth2 ->
                         oauth2
-                                .jwt(Customizer.withDefaults())
+                                .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter))
                                 .authenticationEntryPoint(authenticationEntryPoint)
                 );        return http.build();
     }

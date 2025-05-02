@@ -34,20 +34,20 @@ public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint 
         response.setStatus(HttpStatus.UNAUTHORIZED.value());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
 
-//        ApiError errorResponse = ApiError.builder()
-//                .errorCode("AUTHENTICATION_FAILED")
-//                .status(401)
-//                .message(authException.getMessage())
-//                .path(request.getRequestURI())
-//                .timestamp(LocalDateTime.now())
-//                .build();
-//        if (authException instanceof BadCredentialsException) {
-//            errorResponse.setMessage("Tên đăng nhập hoặc mật khẩu không chính xác");
-//        } else if (authException instanceof LockedException) {
-//            errorResponse.setMessage("Tài khoản đã bị khóa");
-//        } else if (authException instanceof DisabledException) {
-//            errorResponse.setMessage("Tài khoản chưa được kích hoạt");
-//        }
-//        objectMapper.writeValue(response.getOutputStream(), errorResponse);
+        ApiError errorResponse = ApiError.builder()
+                .errorCode("AUTHENTICATION_FAILED")
+                .status(401)
+                .message(authException.getMessage())
+                .path(request.getRequestURI())
+                .timestamp(LocalDateTime.now())
+                .build();
+        if (authException instanceof BadCredentialsException) {
+            errorResponse.setMessage("Tên đăng nhập hoặc mật khẩu không chính xác");
+        } else if (authException instanceof LockedException) {
+            errorResponse.setMessage("Tài khoản đã bị khóa");
+        } else if (authException instanceof DisabledException) {
+            errorResponse.setMessage("Tài khoản chưa được kích hoạt");
+        }
+        objectMapper.writeValue(response.getOutputStream(), errorResponse);
     }
 }

@@ -11,6 +11,7 @@ import com.mosaic.exception.custom.ResourceNotFoundException;
 import com.mosaic.exception.custom.TokenRefreshException;
 import com.mosaic.mapper.UserMapper;
 import com.mosaic.repository.UserRepository;
+import com.mosaic.service.security.DomainUserDetailsService;
 import com.mosaic.service.spec.AuthService;
 import com.mosaic.service.spec.EmailService;
 import com.mosaic.service.spec.OtpService;
@@ -64,12 +65,14 @@ public class AuthServiceImpl implements AuthService {
                 .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.joining(" "));
         Instant validity = Instant.now().plus(tokenValidityInSeconds, ChronoUnit.SECONDS);
-
+        DomainUserDetailsService.CustomUserDetails customUserDetails =
+                (DomainUserDetailsService.CustomUserDetails) authentication.getPrincipal();
         JwtClaimsSet jwtClaimsSet = JwtClaimsSet.builder()
                 .issuedAt(Instant.now())
                 .expiresAt(validity)
                 .subject(authentication.getName())
                 .claim("authorities", authorities)
+                .claim("userId", customUserDetails.getUserId())
                 .build();
 
         JwsHeader jwsHeader = JwsHeader.with(MacAlgorithm.HS512).build();
